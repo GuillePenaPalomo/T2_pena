@@ -4,4 +4,4 @@
 # comandos: cada practica anade el suyo.
 idf_component_register(SRCS "comandos.c"
                        INCLUDE_DIRS "include"
-                       PRIV_REQUIRES consola carga)
+                       PRIV_REQUIRES consola carga sensor)

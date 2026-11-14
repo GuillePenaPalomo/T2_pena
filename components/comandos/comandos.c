@@ -1,6 +1,7 @@
 /* comandos.c - los comandos de la consola del Taller 2. Ver comandos.h. */
 #include "comandos.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -9,6 +10,7 @@
 
 #include "carga.h"
 #include "consola.h"
+#include "sensor.h"
 
 static const char *TAG = "comandos";
 
@@ -73,6 +75,70 @@ static void comando_informe(const char *argumentos)
     printf("Informe de la carga: %s\n", carga_informa() ? "visible" : "oculto");
 }
 
+/* ---- P2: la tarea periódica del sensor ------------------------------------- */
+
+static void comando_sensor(const char *argumentos)
+{
+    unsigned prioridad;
+    char extra;
+    if (sscanf(argumentos, "prio %u %c", &prioridad, &extra) == 1)
+    {
+        const esp_err_t err = sensor_poner_prioridad((UBaseType_t)prioridad);
+        if (err != ESP_OK)
+        {
+            printf("No se pudo cambiar la prioridad: %s\n", esp_err_to_name(err));
+            return;
+        }
+        printf("Prioridad del sensor: %u. La medida empieza de nuevo.\n", prioridad);
+        return;
+    }
+    if (*argumentos != '\0')
+    {
+        printf("Uso: sensor [prio <n>]\n");
+        return;
+    }
+
+    bme280_medida_t m;
+    if (sensor_ultima_medida(&m))
+    {
+        const int32_t t = m.temperatura_centigrados;
+        const uint32_t ta = (uint32_t)(t < 0 ? -t : t);
+        printf("Ultima medida: T=%s%" PRIu32 ",%02" PRIu32 " C, P=%" PRIu32 ",%02" PRIu32
+               " hPa, HR=%" PRIu32 ",%02" PRIu32 " %%\n",
+               t < 0 ? "-" : "", ta / 100, ta % 100,
+               m.presion_pa / 100, m.presion_pa % 100,
+               m.humedad_centiporcentaje / 100, m.humedad_centiporcentaje % 100);
+    }
+    else
+    {
+        printf("Todavia no hay ninguna medida del sensor\n");
+    }
+
+    uint32_t llevados, total;
+    sensor_progreso(&llevados, &total);
+    printf("Tarea sensor: periodo %" PRIu32 " ms, prioridad %u. Resumen en curso: %" PRIu32
+           " de %" PRIu32 " intervalos, con la carga en %s\n",
+           sensor_periodo_ms(), (unsigned)sensor_prioridad(), llevados, total,
+           carga_nombre_modo(carga_modo()));
+
+    for (int i = 0; i < CARGA_N_MODOS; i++)
+    {
+        resumen_datos_t d;
+        UBaseType_t prio_resumen;
+        if (sensor_ultimo_resumen((carga_modo_t)i, &d, &prio_resumen))
+        {
+            char etiqueta[64];
+            snprintf(etiqueta, sizeof etiqueta, "  carga %s, prioridad %u",
+                     carga_nombre_modo((carga_modo_t)i), (unsigned)prio_resumen);
+            resumen_escribir(etiqueta, &d, (int64_t)sensor_periodo_ms() * 1000);
+        }
+        else
+        {
+            printf("  carga %s: sin resumen completo\n", carga_nombre_modo((carga_modo_t)i));
+        }
+    }
+}
+
 /* ---- La tabla -------------------------------------------------------------- */
 
 static const consola_comando_t s_comandos[] = {
@@ -81,6 +147,8 @@ static const consola_comando_t s_comandos[] = {
      comando_carga},
     {"informe", "on|off", "Muestra u oculta el informe de la carga de cada segundo",
      comando_informe},
+    {"sensor", "[prio <n>]", "Ultima medida y ultimo resumen de cada modo; prio cambia la prioridad",
+     comando_sensor},
 };
 
 esp_err_t comandos_iniciar(void)

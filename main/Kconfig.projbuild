@@ -28,4 +28,23 @@ menu "SEyTR - Taller 2"
             divisor del periodo del sensor ni multiplo del periodo de los
             temporizadores: con 20 + 27 = 47 ms no lo es de ninguno.
 
+    config SEYTR_SENSOR_PERIODO_MS
+        int "Periodo de muestreo del sensor, en milisegundos"
+        range 10 10000
+        default 1000
+        help
+            Periodo de la tarea del sensor. La temperatura, la presion y la
+            humedad de una sala cambian en segundos o minutos, y el sensor
+            convierte en menos de 10 ms: 1 s sigue de sobra esos cambios y deja
+            el procesador libre el 99 % del tiempo. Con el tick a 1000 Hz, el
+            periodo se expresa en ticks enteros.
+
+    config SEYTR_SENSOR_INTERVALOS
+        int "Intervalos de cada resumen de periodo y jitter del sensor"
+        range 5 500
+        default 50
+        help
+            Numero fijo de intervalos entre activaciones con que se calcula
+            cada resumen. Con 50 y un periodo de 1 s, un resumen tarda 50 s.
+
 endmenu
