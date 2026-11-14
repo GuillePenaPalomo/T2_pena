@@ -1,39 +1,68 @@
 # Componente `led`
 
-Un LED en un pin de salida digital. Configura el pin como salida, lo deja
-apagado y ofrece encenderlo, apagarlo y conmutarlo.
+El brillo de un LED con una **salida modulada de LEDC**, el periférico de
+modulación por ancho de pulso del ESP32-S3. Es la práctica P3 del taller. En
+el Taller 1 este componente encendía y apagaba el pin como salida digital;
+ahora el pin pasa a LEDC y el componente ya no lo configura como GPIO.
 
-El componente **no sabe en qué pin está el LED ni cómo está montado**: los
-recibe al iniciarse. Así el número del pin se escribe en un solo sitio, el
-fichero de pines del proyecto, y el componente sirve igual en otro proyecto.
+Un temporizador de LEDC fija la **frecuencia** y la **resolución**; un canal
+saca la señal por el pin con un **ciclo de trabajo**, en pasos del
+temporizador, de 0 a 2^resolución.
 
-En el código de `main`, que es quien sabe el pin:
+**Una sola tarea maneja LEDC**: la tarea `led`. Las demás le mandan órdenes por
+una cola: el pulsador pide «modo siguiente» y la consola, un modo o un ciclo de
+trabajo. Así ninguna llamada a LEDC se hace desde una rutina de interrupción,
+ni desde dos tareas a la vez, y quien manda la orden no se queda esperando si
+hay una transición en curso.
+
+| Modo | Ciclo de trabajo |
+|---|---|
+| `apagado` | 0 |
+| `medio` | el porcentaje configurado, 25 % por omisión |
+| `encendido` | 2^resolución, el 100 % |
+| `transicion` | sube y baja solo, por hardware |
+| `manual` | el que fije `led_poner_ciclo()` |
+
+El pulsador recorre los cuatro primeros en orden.
 
 ```c
 #include "led.h"
-#include "pines.h"   /* el fichero de pines del proyecto, no del componente */
+#include "pines.h"
 
-static led_t led;
-
-void app_main(void)
-{
-    ESP_ERROR_CHECK(led_iniciar(&led, PIN_LED, LED_NIVEL_ENCENDIDO));
-    led_encender(&led);
-    led_apagar(&led);
-    led_conmutar(&led);
-}
+const led_config_t config = {
+    .pin = PIN_LED,
+    .nivel_encendido = LED_NIVEL_ENCENDIDO,
+    .frecuencia_hz = 5000,
+    .resolucion_bits = 13,
+    .medio_porcentaje = 25,
+    .transicion_ms = 1500,
+    .prioridad = 4,
+    .nucleo = 0,
+    .pila = 3072,
+};
+ESP_ERROR_CHECK(led_iniciar(&config));
+led_siguiente_modo();   /* deja la orden en la cola y vuelve */
 ```
 
-- `nivel_encendido` es el nivel lógico que enciende el LED: 1 si está montado
-  entre el pin y masa, 0 si está entre el pin y la alimentación. Lo decide el
-  montaje, no el código.
-- Con `GPIO_NUM_NC` como pin, el componente no toca ningún pin y solo lleva la
-  cuenta del estado. Sirve para trabajar sin LED.
-- `led_iniciar()` escribe el nivel de apagado **antes** de configurar el pin
-  como salida, para que el LED no llegue a encenderse al arrancar.
-- `led_iniciar()` devuelve `ESP_ERR_INVALID_ARG` si el puntero es nulo o si el
-  pin no existe o no puede ser salida, y el error de `gpio_config()` si la
-  configuración falla.
+- `led_iniciar()` configura el temporizador con `ledc_timer_config()`, en
+  `LEDC_LOW_SPEED_MODE`, el único del ESP32-S3; el canal con
+  `ledc_channel_config()`; instala el servicio de transiciones con
+  `ledc_fade_func_install()` y registra el aviso de fin de transición. Si el
+  LED está montado a 3,3 V, invierte la salida.
+- **La frecuencia y la resolución no se eligen por separado**: el reloj del
+  temporizador tiene que dar al menos frecuencia × 2^resolución ciclos por
+  segundo, y el más rápido es de 80 MHz. Si no caben, `ledc_timer_config()`
+  falla y `led_iniciar()` devuelve su error.
+- El 100 % se escribe como 2^resolución, salvo con 14 bits, la resolución
+  máxima, en que el contador interno se desbordaría: entonces es 2^14 − 1.
+- La transición se pide con `ledc_set_fade_time_and_start(...,
+  LEDC_FADE_NO_WAIT)`. Al terminar, LEDC llama a una función desde su rutina
+  de interrupción, que solo avisa a la tarea por la cola; la tarea empieza la
+  transición contraria. El tiempo real puede apartarse del pedido, hasta la
+  mitad o el doble, porque el hardware cambia el ciclo a saltos enteros.
+- Antes de cambiar el ciclo de trabajo, la tarea detiene la transición en
+  curso con `ledc_fade_stop()`. Si no, `ledc_set_duty_and_update()` esperaría
+  a que terminara.
 
-Depende de `esp_driver_gpio`, declarado en `REQUIRES` porque su cabecera
-`driver/gpio.h` aparece en la cabecera pública del componente.
+Depende de `esp_driver_gpio` y `freertos`, en `REQUIRES` porque sus tipos
+aparecen en la cabecera pública, y de `esp_driver_ledc`, en `PRIV_REQUIRES`.

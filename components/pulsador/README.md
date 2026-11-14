@@ -1,51 +1,63 @@
 # Componente `pulsador`
 
-Un pulsador en un pin de entrada digital. Configura el pin como entrada, con la
-resistencia de polarización interna que corresponde al montaje y la
-interrupción por el flanco que va hacia el nivel de pulsado; permite quitar y
-volver a poner esa resistencia, y lee el nivel.
+Un pulsador en un pin de entrada digital, atendido por interrupción.
 
 Como el componente `led`, **no sabe en qué pin está el pulsador ni cómo está
 montado**: los recibe al iniciarse.
 
-Lo que **no** hace es atender la interrupción. El componente deja el pin
-preparado para interrumpir, pero la rutina de interrupción, la cola o la
-notificación y el antirrebote son del programa que lo usa: es lo que se
-estudia en U2-S2, y cada programa los resuelve a su manera.
+Tiene dos partes:
 
-En el código de `main`, que es quien sabe el pin:
+- **El pin**, como en el Taller 1: lo configura como entrada, activa o quita
+  la resistencia de polarización interna y lee el nivel.
+- **La atención**, añadida en el Taller 2 para P3: una rutina de interrupción
+  mínima y una tarea, `pulsador`, que aplica el antirrebote y, por cada
+  pulsación válida, llama a una función de aviso que pone quien lo usa. El
+  componente no sabe qué hace esa función.
 
 ```c
 #include "pulsador.h"
-#include "pines.h"   /* el fichero de pines del proyecto, no del componente */
+#include "pines.h"
 
 static pulsador_t pulsador;
 
-void app_main(void)
+static void al_pulsar(uint32_t n, void *arg)
 {
-    ESP_ERROR_CHECK(pulsador_iniciar(&pulsador, PIN_PULSADOR, PULSADOR_NIVEL_PULSADO));
-    if (pulsador_pulsado(&pulsador)) {
-        /* ... */
-    }
+    led_siguiente_modo();   /* se ejecuta en la tarea, no en la interrupción */
 }
+
+ESP_ERROR_CHECK(pulsador_iniciar(&pulsador, PIN_PULSADOR, PULSADOR_NIVEL_PULSADO));
+ESP_ERROR_CHECK(pulsador_polarizar(&pulsador, false));  /* resistencia externa */
+const pulsador_atencion_t atencion = {
+    .guarda_ms = 200, .confirmacion_ms = 20,
+    .prioridad = 6, .nucleo = 0, .pila = 3072,
+    .aviso = al_pulsar, .argumento = NULL,
+};
+ESP_ERROR_CHECK(pulsador_atender(&pulsador, &atencion));
 ```
 
-- `nivel_pulsado` es el nivel lógico que se lee con el pulsador apretado: 0 si
-  está montado entre el pin y masa, con pull-up, que es lo habitual; 1 si está
-  entre el pin y la alimentación, con pull-down. Lo decide el montaje, no el
-  código.
-- `pulsador_iniciar()` deja la interrupción pedida en el flanco de bajada con
-  `nivel_pulsado` 0, y en el de subida con 1, pero desactivada. Se activa al
-  añadir un manejador para el pin con `gpio_isr_handler_add()`, después de
-  instalar el servicio de interrupciones de GPIO con
-  `gpio_install_isr_service()`; `gpio_isr_handler_remove()` la vuelve a
-  desactivar.
-- `pulsador_polarizar(&pulsador, false)` quita la resistencia interna: sin
-  ella, y sin una externa, el pin queda flotante. Sirve para verlo.
-- `pulsador_iniciar()` devuelve `ESP_ERR_INVALID_ARG` si el puntero es nulo o
-  si el pin no está elegido o no existe, y el error de `gpio_config()` si la
-  configuración falla. A diferencia del LED, no admite `GPIO_NUM_NC`: sin
-  pulsador no hay nada que leer.
+**Qué hace la rutina de interrupción.** Toma el instante del flanco con
+`esp_timer_get_time()` y lo manda a la tarea con `xQueueSendFromISR()`. Nada
+más: ni trazas, ni esperas, ni llamadas a LEDC. Se usa una cola y no una
+notificación porque la tarea necesita el instante de cada flanco.
 
-Depende de `esp_driver_gpio`, declarado en `REQUIRES` porque su cabecera
-`driver/gpio.h` aparece en la cabecera pública del componente.
+**Qué hace la tarea.** El antirrebote, en dos pasos:
+
+1. Un flanco que llega antes de que pase la **guarda** desde la última
+   pulsación aceptada es rebote: se descarta.
+2. Si llega después, la tarea espera la **confirmación** y comprueba que el
+   pin sigue pulsado. Sin esa comprobación, los rebotes al soltar una
+   pulsación más larga que la guarda llegarían con la guarda ya vencida y
+   contarían como otra pulsación.
+
+Después traza la pulsación y llama a la función de aviso.
+
+- `pulsador_atender()` instala el servicio de interrupciones de GPIO si nadie
+  lo ha instalado, crea la cola y la tarea y registra la rutina con
+  `gpio_isr_handler_add()`, que activa la interrupción del pin. Solo admite un
+  pulsador atendido. La confirmación tiene que ser menor que la guarda.
+- `pulsador_cuentas()` da las pulsaciones válidas y los flancos descartados.
+- `pulsador_polarizar(&pulsador, false)` quita la resistencia interna: en el
+  montaje del taller el nivel de reposo lo fija la externa.
+
+Depende de `esp_driver_gpio` y `freertos`, en `REQUIRES` porque sus tipos
+aparecen en la cabecera pública, y de `esp_timer`, en `PRIV_REQUIRES`.

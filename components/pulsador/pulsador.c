@@ -1,14 +1,22 @@
 /* pulsador.c - implementación del componente pulsador.
  *
- * Todo el acceso al pin del pulsador pasa por aquí, salvo el registro de la
- * rutina de interrupción, que hace main. Quien usa el componente habla de
+ * Todo el acceso al pin del pulsador pasa por aquí, también la rutina de
+ * interrupción y su tarea, desde el Taller 2. Quien usa el componente habla de
  * «pulsado»; qué nivel lógico es eso, y qué resistencia de polarización le
  * corresponde, lo resuelve este fichero con el dato del montaje.
  */
 
 #include "pulsador.h"
 
+#include <inttypes.h>
+#include <stdio.h>
+
+#include "freertos/queue.h"
+#include "freertos/task.h"
+
+#include "esp_attr.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 
 static const char *TAG = "pulsador";
 
@@ -82,4 +90,121 @@ int pulsador_nivel(const pulsador_t *pulsador)
 bool pulsador_pulsado(const pulsador_t *pulsador)
 {
     return gpio_get_level(pulsador->pin) == pulsador->nivel_pulsado;
+}
+
+/* ---- La atención por interrupción ------------------------------------------ */
+
+#define LONGITUD_COLA 16
+
+static pulsador_t *s_pulsador;
+static pulsador_atencion_t s_atencion;
+static QueueHandle_t s_flancos;
+static volatile uint32_t s_pulsaciones;
+static volatile uint32_t s_descartados;
+
+/* La rutina de interrupción: anota el instante del flanco y lo manda a la
+ * tarea por la cola. Nada más: ni trazas, ni esperas, ni LEDC. Si la cola
+ * está llena, el flanco se pierde, y no importa: una ráfaga de rebotes que
+ * la llena ya ha dejado en ella el primer flanco, que es el que cuenta. */
+static void IRAM_ATTR isr_pulsador(void *argumento)
+{
+    (void)argumento;
+    const int64_t instante = esp_timer_get_time();
+    BaseType_t despertada = pdFALSE;
+    xQueueSendFromISR(s_flancos, &instante, &despertada);
+    portYIELD_FROM_ISR(despertada);
+}
+
+/* El antirrebote de U2-S2 y del Taller 1, con la confirmación del nivel:
+ *   1. Un flanco que llega antes de que pase la guarda desde la última
+ *      pulsación aceptada es rebote, y se descarta.
+ *   2. Si llega después, la tarea espera a que pase el rebote y comprueba
+ *      que el pin sigue pulsado. Sin esa comprobación, los rebotes al soltar
+ *      una pulsación más larga que la guarda llegarían con la guarda ya
+ *      vencida y contarían como una pulsación nueva.
+ * Mientras espera, los flancos que llegan quedan en la cola y después los
+ * descarta la guarda, que es más larga que la confirmación. */
+static void tarea_pulsador(void *argumento)
+{
+    (void)argumento;
+    const int64_t guarda_us = (int64_t)s_atencion.guarda_ms * 1000;
+    int64_t ultima_us = INT64_MIN / 2; /* el primer flanco queda fuera de la guarda */
+
+    for (;;)
+    {
+        int64_t flanco_us;
+        xQueueReceive(s_flancos, &flanco_us, portMAX_DELAY);
+
+        if (flanco_us - ultima_us < guarda_us)
+        {
+            s_descartados = s_descartados + 1;
+            continue;
+        }
+        ultima_us = flanco_us;
+
+        vTaskDelay(pdMS_TO_TICKS(s_atencion.confirmacion_ms));
+        if (!pulsador_pulsado(s_pulsador))
+        {
+            /* Un rebote al soltar, o ruido: el pin ya no está pulsado. */
+            s_descartados = s_descartados + 1;
+            continue;
+        }
+
+        s_pulsaciones = s_pulsaciones + 1;
+        printf("pulsador: pulsacion %" PRIu32 " (flancos descartados hasta ahora: %" PRIu32 ")\n",
+               s_pulsaciones, s_descartados);
+        if (s_atencion.aviso != NULL)
+        {
+            s_atencion.aviso(s_pulsaciones, s_atencion.argumento);
+        }
+    }
+}
+
+esp_err_t pulsador_atender(pulsador_t *pulsador, const pulsador_atencion_t *atencion)
+{
+    if (pulsador == NULL || atencion == NULL ||
+        atencion->confirmacion_ms >= atencion->guarda_ms)
+    {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (s_flancos != NULL)
+    {
+        return ESP_ERR_INVALID_STATE;
+    }
+    s_pulsador = pulsador;
+    s_atencion = *atencion;
+
+    s_flancos = xQueueCreate(LONGITUD_COLA, sizeof(int64_t));
+    if (s_flancos == NULL)
+    {
+        return ESP_ERR_NO_MEM;
+    }
+    if (xTaskCreatePinnedToCore(tarea_pulsador, "pulsador", atencion->pila, NULL,
+                                atencion->prioridad, NULL, atencion->nucleo) != pdPASS)
+    {
+        return ESP_ERR_NO_MEM;
+    }
+
+    /* El servicio se instala una vez para todo el proyecto. Si ya lo instaló
+     * otro, devuelve ESP_ERR_INVALID_STATE, y vale. */
+    esp_err_t error = gpio_install_isr_service(0);
+    if (error != ESP_OK && error != ESP_ERR_INVALID_STATE)
+    {
+        return error;
+    }
+    error = gpio_isr_handler_add(pulsador->pin, isr_pulsador, NULL);
+    if (error != ESP_OK)
+    {
+        return error;
+    }
+
+    ESP_LOGI(TAG, "atendido por interrupcion: guarda %" PRIu32 " ms, confirmacion %" PRIu32 " ms",
+             atencion->guarda_ms, atencion->confirmacion_ms);
+    return ESP_OK;
+}
+
+void pulsador_cuentas(uint32_t *pulsaciones, uint32_t *descartados)
+{
+    *pulsaciones = s_pulsaciones;
+    *descartados = s_descartados;
 }

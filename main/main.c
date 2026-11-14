@@ -22,6 +22,8 @@
 #include "bus_i2c.h"
 #include "carga.h"
 #include "comandos.h"
+#include "led.h"
+#include "pulsador.h"
 #include "sensor.h"
 
 #include "pines.h"
@@ -49,6 +51,7 @@ _Static_assert(CONFIG_SEYTR_SENSOR_PERIODO_MS %
 
 static bus_i2c_t s_bus;
 static bme280_t s_bme280;
+static pulsador_t s_pulsador;
 
 static void iniciar_carga(void)
 {
@@ -100,6 +103,52 @@ static void iniciar_sensor(void)
     ESP_ERROR_CHECK(sensor_iniciar(&config));
 }
 
+/* Lo que se hace con cada pulsación válida: pedir al LED el modo siguiente.
+ * Se ejecuta en la tarea del pulsador; solo deja la orden en la cola del LED. */
+static void al_pulsar(uint32_t pulsaciones, void *argumento)
+{
+    (void)pulsaciones;
+    (void)argumento;
+    if (led_siguiente_modo() != ESP_OK)
+    {
+        ESP_LOGW(TAG, "la cola del LED esta llena: se pierde la pulsacion");
+    }
+}
+
+static void iniciar_led_y_pulsador(void)
+{
+    const led_config_t led = {
+        .pin = PIN_LED,
+        .nivel_encendido = LED_NIVEL_ENCENDIDO,
+        .frecuencia_hz = CONFIG_SEYTR_LED_FRECUENCIA_HZ,
+        .resolucion_bits = CONFIG_SEYTR_LED_RESOLUCION_BITS,
+        .medio_porcentaje = CONFIG_SEYTR_LED_MEDIO_PORCENTAJE,
+        .transicion_ms = CONFIG_SEYTR_LED_TRANSICION_MS,
+        .prioridad = PRIORIDAD_LED,
+        .nucleo = NUCLEO_PRUEBA,
+        .pila = PILA_LED,
+    };
+    ESP_ERROR_CHECK(led_iniciar(&led));
+
+    ESP_ERROR_CHECK(pulsador_iniciar(&s_pulsador, PIN_PULSADOR, PULSADOR_NIVEL_PULSADO));
+    /* El nivel de reposo lo fija la resistencia externa de la protoboard. La
+     * interna se deja también activada, en paralelo: no cambia el nivel en
+     * reposo, y si la externa hace mal contacto el pin no queda flotante. Sin
+     * ella, la primera captura de P3 contó 19 pulsaciones de 8 y unos 20 000
+     * flancos de ruido (resultados/p3_led_modos_pin_flotante.txt). */
+    ESP_ERROR_CHECK(pulsador_polarizar(&s_pulsador, true));
+    const pulsador_atencion_t atencion = {
+        .guarda_ms = CONFIG_SEYTR_GUARDA_MS,
+        .confirmacion_ms = CONFIG_SEYTR_CONFIRMACION_MS,
+        .prioridad = PRIORIDAD_PULSADOR,
+        .nucleo = NUCLEO_PRUEBA,
+        .pila = PILA_PULSADOR,
+        .aviso = al_pulsar,
+        .argumento = NULL,
+    };
+    ESP_ERROR_CHECK(pulsador_atender(&s_pulsador, &atencion));
+}
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "SEyTR - Taller 2. Tick a %d Hz", configTICK_RATE_HZ);
@@ -110,6 +159,7 @@ void app_main(void)
 
     iniciar_carga();
     iniciar_sensor();
+    iniciar_led_y_pulsador();
 
     /* La consola, al final: sus comandos llaman a los demás componentes. */
     ESP_ERROR_CHECK(comandos_iniciar());

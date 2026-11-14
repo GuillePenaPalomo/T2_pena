@@ -10,6 +10,8 @@
 
 #include "carga.h"
 #include "consola.h"
+#include "led.h"
+#include "pulsador.h"
 #include "sensor.h"
 
 static const char *TAG = "comandos";
@@ -139,6 +141,51 @@ static void comando_sensor(const char *argumentos)
     }
 }
 
+/* ---- P3: el LED con LEDC --------------------------------------------------- */
+
+/* La consola no llama a LEDC: manda la orden a la tarea del LED. Si llamara
+ * ella durante una transición, ledc_set_duty_and_update() la dejaría
+ * esperando hasta el final de la transición. */
+static void comando_led(const char *argumentos)
+{
+    esp_err_t err = ESP_OK;
+    led_modo_t modo;
+    unsigned porcentaje;
+    char extra;
+
+    if (*argumentos == '\0')
+    {
+        uint32_t ciclo, maximo, pulsaciones, descartados;
+        led_estado(&modo, &ciclo, &maximo);
+        pulsador_cuentas(&pulsaciones, &descartados);
+        printf("LED: modo %s, ciclo de trabajo %" PRIu32 " de %" PRIu32
+               ". Pulsaciones %" PRIu32 ", flancos descartados %" PRIu32 "\n",
+               led_nombre_modo(modo), ciclo, maximo, pulsaciones, descartados);
+        return;
+    }
+    if (strcmp(argumentos, "siguiente") == 0)
+    {
+        err = led_siguiente_modo();
+    }
+    else if (led_modo_por_nombre(argumentos, &modo))
+    {
+        err = led_poner_modo(modo);
+    }
+    else if (sscanf(argumentos, "%u %c", &porcentaje, &extra) == 1 && porcentaje <= 100)
+    {
+        err = led_poner_ciclo(porcentaje);
+    }
+    else
+    {
+        printf("Uso: led [siguiente|apagado|medio|encendido|transicion|0-100]\n");
+        return;
+    }
+    if (err != ESP_OK)
+    {
+        printf("No se pudo mandar la orden al LED: %s\n", esp_err_to_name(err));
+    }
+}
+
 /* ---- La tabla -------------------------------------------------------------- */
 
 static const consola_comando_t s_comandos[] = {
@@ -149,6 +196,8 @@ static const consola_comando_t s_comandos[] = {
      comando_informe},
     {"sensor", "[prio <n>]", "Ultima medida y ultimo resumen de cada modo; prio cambia la prioridad",
      comando_sensor},
+    {"led", "[siguiente|apagado|medio|encendido|transicion|0-100]",
+     "Modo del LED o ciclo de trabajo en %; sin argumento, el estado", comando_led},
 };
 
 esp_err_t comandos_iniciar(void)

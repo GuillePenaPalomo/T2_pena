@@ -47,4 +47,53 @@ menu "SEyTR - Taller 2"
             Numero fijo de intervalos entre activaciones con que se calcula
             cada resumen. Con 50 y un periodo de 1 s, un resumen tarda 50 s.
 
+    config SEYTR_LED_FRECUENCIA_HZ
+        int "Frecuencia de la salida modulada del LED, en hercios"
+        range 100 40000
+        default 5000
+        help
+            Muy por encima de la frecuencia a la que el ojo deja de distinguir
+            el parpadeo, unos 100 Hz, y tambien del efecto estroboscopico al
+            mover el LED. Frecuencia por 2^resolucion no puede pasar del reloj
+            del temporizador, 80 MHz: a 5 kHz caben 16 000 pasos, 13 bits.
+
+    config SEYTR_LED_RESOLUCION_BITS
+        int "Resolucion de la salida modulada del LED, en bits"
+        range 1 14
+        default 13
+        help
+            2^13 = 8192 niveles de brillo: el maximo que cabe a 5 kHz, y de
+            sobra para que una transicion se vea continua. Con 14 bits el 100 %
+            se escribe 2^14 - 1.
+
+    config SEYTR_LED_MEDIO_PORCENTAJE
+        int "Brillo del modo medio, en tanto por ciento"
+        range 1 99
+        default 25
+        help
+            El ojo no ve el brillo en proporcion al ciclo de trabajo: con un
+            25 % el LED ya se ve claramente a media luz.
+
+    config SEYTR_LED_TRANSICION_MS
+        int "Duracion pedida de cada subida o bajada del modo transicion, en milisegundos"
+        range 100 10000
+        default 1500
+
+    config SEYTR_GUARDA_MS
+        int "Tiempo de guarda del antirrebote del pulsador, en milisegundos"
+        range 1 1000
+        default 200
+        help
+            Tras una pulsacion aceptada, los flancos que lleguen antes se
+            descartan como rebote. Es la ventana justificada en el Taller 1.
+
+    config SEYTR_CONFIRMACION_MS
+        int "Espera antes de confirmar el nivel del pulsador, en milisegundos"
+        range 1 999
+        default 20
+        help
+            Tras un flanco aceptado, la tarea espera este tiempo y comprueba que
+            el pin sigue a nivel de pulsado. Algo mayor que el rebote y menor
+            que el tiempo de guarda.
+
 endmenu
