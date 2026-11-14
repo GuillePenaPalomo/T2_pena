@@ -1,0 +1,105 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xde4
+load:0x403cb700,len:0x2f58
+entry 0x403c8904
+I (24) boot: ESP-IDF v6.1 2nd stage bootloader
+I (25) boot: compile time Nov 14 2026 19:09:23
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (27) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 2MB
+I (42) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (50) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (69) boot:  2 factory          factory app      00 00 00010000 00100000
+I (75) boot: End of partition table
+I (79) esp_image: segment 0: paddr=00010020 vaddr=3c020020 size=0b3f0h ( 46064) map
+I (95) esp_image: segment 1: paddr=0001b418 vaddr=3fc90f00 size=03228h ( 12840) load
+I (98) esp_image: segment 2: paddr=0001e648 vaddr=40374000 size=019d0h (  6608) load
+I (103) esp_image: segment 3: paddr=00020020 vaddr=42000020 size=15db4h ( 89524) map
+I (125) esp_image: segment 4: paddr=00035ddc vaddr=403759d0 size=0b4e0h ( 46304) load
+I (136) esp_image: segment 5: paddr=000412c4 vaddr=50000000 size=00024h (    36) load
+I (142) boot: Loaded app from partition at offset 0x10000
+I (142) boot: Disabling RNG early entropy source...
+I (153) cpu_start: Multicore app
+I (162) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (163) cpu_start: Pro cpu start user code
+I (163) cpu_start: cpu freq: 160000000 Hz
+I (164) app_init: Application information:
+I (168) app_init: Project name:     T2_pena
+I (172) app_init: App version:      2e3b456-dirty
+I (176) app_init: Compile time:     Nov 14 2026 19:08:11
+I (181) app_init: ELF file SHA256:  f484fe837...
+I (186) app_init: ESP-IDF:          v6.1
+I (189) efuse_init: Min chip rev:     v0.0
+I (193) efuse_init: Max chip rev:     v0.99 
+I (197) efuse_init: Chip rev:         v0.2
+I (201) heap_init: Initializing. RAM available for dynamic allocation:
+I (207) heap_init: At 3FC94C00 len 00054B10 (338 KiB): RAM
+I (212) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (218) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (223) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (229) spi_flash: detected chip: mxic
+I (232) spi_flash: flash io: dio
+W (235) spi_flash: Detected size(16384k) larger than the size in the binary image header(2048k). Using the size in the binary image header.
+I (247) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (253) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (260) main_task: Started on CPU0
+I (278) main_task: Calling app_main()
+I (279) taller2: SEyTR - Taller 2. Tick a 1000 Hz
+I (279) carga: dos tareas de carga en el nucleo 0, prioridad 2: 20 ms de calculo y 27 ms de espera. Empieza parada
+I (285) comandos: consola en la UART0: escribe help para ver los comandos
+> I (304) main_task: Returned from app_main()
+help
+Comandos:
+  help               Muestra esta lista de comandos
+  carga parada|turnos|inanicion|corregida Cambia el modo de la carga; sin argumento, lo muestra
+  informe on|off     Muestra u oculta el informe de la carga de cada segundo
+> carga turnos
+Carga: turnos (t = 4123 ms)
+> carga turnos (t = 4279 ms): carga_a prio 2 avanza 34745; carga_b prio 2 avanza 36670
+carga turnos (t = 5279 ms): carga_a prio 2 avanza 196982; carga_b prio 2 avanza 217613
+carga turnos (t = 6279 ms): carga_a prio 2 avanza 194653; carga_b prio 2 avanza 213984
+carga turnos (t = 7279 ms): carga_a prio 2 avanza 197981; carga_b prio 2 avanza 216703
+carga turnos (t = 8279 ms): carga_a prio 2 avanza 200666; carga_b prio 2 avanza 219969
+carga inanicion
+Carga: inanicion (t = 8716 ms)
+carga_a no se bloquea: el aviso del watchdog deberia salir en unos 5 s
+> carga inanicion (t = 9279 ms): carga_a prio 3 avanza 595567; carga_b prio 2 avanza 92513
+carga inanicion (t = 10279 ms): carga_a prio 3 avanza 931713; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+carga inanicion (t = 11279 ms): carga_a prio 3 avanza 931707; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+carga inanicion (t = 12279 ms): carga_a prio 3 avanza 931705; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+carga inanicion (t = 13279 ms): carga_a prio 3 avanza 931705; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+E (13728) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+E (13728) task_wdt:  - IDLE0 (CPU 0)
+E (13728) task_wdt: Tasks currently running:
+E (13728) task_wdt: CPU 0: carga_a
+E (13728) task_wdt: CPU 1: IDLE1
+E (13728) task_wdt: Print CPU 0 (current core) backtrace
+
+
+Backtrace: 0x4200F066:0x3FC92280 0x4200F478:0x3FC922A0 0x40376F0D:0x3FC922D0 0x4037A29B:0x3FCEA460 0x40376A1D:0x3FCEA480 0x4200C3F4:0x3FCEA4A0 0x4200C429:0x3FCEA4C0 0x420139F2:0x3FCEA4E0
+
+carga inanicion (t = 14279 ms): carga_a prio 3 avanza 900153; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+carga inanicion (t = 15279 ms): carga_a prio 3 avanza 931723; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+carga inanicion (t = 16279 ms): carga_a prio 3 avanza 931734; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+carga inanicion (t = 17279 ms): carga_a prio 3 avanza 931734; carga_b prio 2 avanza 0 (PARADA: no recibe procesador)
+carga corregida
+Carga: corregida (t = 17798 ms)
+> carga corregida (t = 18279 ms): carga_a prio 3 avanza 678680; carga_b prio 2 avanza 186430
+carga corregida (t = 19279 ms): carga_a prio 3 avanza 403471; carga_b prio 2 avanza 391322
+carga corregida (t = 20279 ms): carga_a prio 3 avanza 391839; carga_b prio 2 avanza 402981
+carga corregida (t = 21279 ms): carga_a prio 3 avanza 391329; carga_b prio 2 avanza 398382
+carga corregida (t = 22279 ms): carga_a prio 3 avanza 402051; carga_b prio 2 avanza 391383
+carga parada
+Carga: parada (t = 22399 ms)
+> 
