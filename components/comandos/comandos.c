@@ -13,6 +13,7 @@
 #include "led.h"
 #include "pulsador.h"
 #include "sensor.h"
+#include "temporizadores.h"
 
 static const char *TAG = "comandos";
 
@@ -186,6 +187,57 @@ static void comando_led(const char *argumentos)
     }
 }
 
+/* ---- P4: los temporizadores ------------------------------------------------ */
+
+static void comando_periodo(const char *argumentos)
+{
+    unsigned periodo;
+    char extra;
+    if (*argumentos == '\0')
+    {
+        printf("Periodo de los temporizadores: %" PRIu32 " ms\n", temporizadores_periodo_ms());
+        return;
+    }
+    if (sscanf(argumentos, "%u %c", &periodo, &extra) != 1 || periodo == 0 || periodo > 1000)
+    {
+        printf("Uso: periodo <1-1000 ms>\n");
+        return;
+    }
+    const esp_err_t err = temporizadores_poner_periodo(periodo);
+    if (err != ESP_OK)
+    {
+        printf("No se pudo cambiar el periodo: %s\n", esp_err_to_name(err));
+        return;
+    }
+    printf("Periodo de la alarma y del temporizador software: %u ms. La medida empieza de nuevo.\n",
+           periodo);
+}
+
+static void comando_jitter(const char *argumentos)
+{
+    (void)argumentos;
+    printf("Periodo actual %" PRIu32 " ms, carga en %s\n", temporizadores_periodo_ms(),
+           carga_nombre_modo(carga_modo()));
+    for (int t = 0; t < TEMPORIZADOR_N; t++)
+    {
+        printf("%s (envios perdidos con la cola llena: %" PRIu32 "):\n",
+               temporizadores_nombre((temporizador_t)t),
+               temporizadores_perdidos((temporizador_t)t));
+        for (int m = 0; m < CARGA_N_MODOS; m++)
+        {
+            resumen_datos_t d;
+            uint32_t periodo_ms;
+            if (temporizadores_ultimo_resumen((temporizador_t)t, (carga_modo_t)m, &d, &periodo_ms))
+            {
+                char etiqueta[32];
+                snprintf(etiqueta, sizeof etiqueta, "  carga %s", carga_nombre_modo((carga_modo_t)m));
+                /* El nominal es el periodo con que se midió ese resumen. */
+                resumen_escribir(etiqueta, &d, (int64_t)periodo_ms * 1000);
+            }
+        }
+    }
+}
+
 /* ---- La tabla -------------------------------------------------------------- */
 
 static const consola_comando_t s_comandos[] = {
@@ -198,6 +250,9 @@ static const consola_comando_t s_comandos[] = {
      comando_sensor},
     {"led", "[siguiente|apagado|medio|encendido|transicion|0-100]",
      "Modo del LED o ciclo de trabajo en %; sin argumento, el estado", comando_led},
+    {"periodo", "[ms]", "Periodo de la alarma y del temporizador software", comando_periodo},
+    {"jitter", NULL, "Ultimos resumenes de los dos temporizadores, por modo de carga",
+     comando_jitter},
 };
 
 esp_err_t comandos_iniciar(void)

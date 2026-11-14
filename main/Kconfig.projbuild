@@ -47,6 +47,15 @@ menu "SEyTR - Taller 2"
             Numero fijo de intervalos entre activaciones con que se calcula
             cada resumen. Con 50 y un periodo de 1 s, un resumen tarda 50 s.
 
+    config SEYTR_TEMPORIZADORES_PERIODO_MS
+        int "Periodo inicial de la alarma y del temporizador software, en milisegundos"
+        range 1 1000
+        default 10
+        help
+            El mismo para los dos. El ciclo de la carga, 47 ms, no es multiplo
+            suyo: unos vencimientos caen dentro de una rafaga y otros no. Se
+            cambia en ejecucion con el comando periodo.
+
     config SEYTR_LED_FRECUENCIA_HZ
         int "Frecuencia de la salida modulada del LED, en hercios"
         range 100 40000

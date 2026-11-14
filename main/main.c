@@ -25,6 +25,7 @@
 #include "led.h"
 #include "pulsador.h"
 #include "sensor.h"
+#include "temporizadores.h"
 
 #include "pines.h"
 #include "tareas.h"
@@ -149,6 +150,24 @@ static void iniciar_led_y_pulsador(void)
     ESP_ERROR_CHECK(pulsador_atender(&s_pulsador, &atencion));
 }
 
+/* Unos vencimientos tienen que caer dentro de una ráfaga de la carga y otros
+ * no: el ciclo de la carga no puede ser múltiplo del periodo. */
+_Static_assert((CONFIG_SEYTR_CARGA_RAFAGA_MS + CONFIG_SEYTR_CARGA_ESPERA_MS) %
+                       CONFIG_SEYTR_TEMPORIZADORES_PERIODO_MS != 0,
+               "el ciclo de la carga no debe ser multiplo del periodo de los temporizadores");
+
+static void iniciar_temporizadores(void)
+{
+    const temporizadores_config_t config = {
+        .periodo_ms = CONFIG_SEYTR_TEMPORIZADORES_PERIODO_MS,
+        .intervalos = CONFIG_SEYTR_SENSOR_INTERVALOS, /* el mismo número que P2 */
+        .prioridad_medida = PRIORIDAD_MEDIDA,
+        .nucleo_medida = NUCLEO_OBSERVACION,
+        .pila_medida = PILA_MEDIDA,
+    };
+    ESP_ERROR_CHECK(temporizadores_iniciar(&config));
+}
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "SEyTR - Taller 2. Tick a %d Hz", configTICK_RATE_HZ);
@@ -160,6 +179,7 @@ void app_main(void)
     iniciar_carga();
     iniciar_sensor();
     iniciar_led_y_pulsador();
+    iniciar_temporizadores();
 
     /* La consola, al final: sus comandos llaman a los demás componentes. */
     ESP_ERROR_CHECK(comandos_iniciar());
