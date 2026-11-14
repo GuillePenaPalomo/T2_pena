@@ -4,16 +4,28 @@
 # desde el codigo.
 #
 # Los pines no estan aqui: estan en main/pines.h, que es donde se declaran los
-# pines del proyecto.
+# pines del proyecto. Las prioridades, en main/tareas.h.
 
 menu "SEyTR - Taller 2"
 
-    config SEYTR_TRABAJO_REGISTRO_MS
-        int "Trabajo de cada informe, en milisegundos"
-        range 1 500
+    config SEYTR_CARGA_RAFAGA_MS
+        int "Rafaga de calculo de cada tarea de carga, en milisegundos"
+        range 2 500
         default 20
         help
-            Tiempo de cálculo de la tarea `carga_1` y `carga_2` asignado al `NUCLEO0`,
-            admiten un valor entre 1 y 500 ms (por defecto 20 ms).
+            Tiempo de calculo de cada ciclo de las tareas `carga_a` y
+            `carga_b`, fijadas al nucleo 0. Varios ticks, para que el
+            planificador llegue a turnarlas.
+
+    config SEYTR_CARGA_ESPERA_MS
+        int "Espera bloqueada de cada tarea de carga, en milisegundos"
+        range 3 1000
+        default 27
+        help
+            Tiempo que cada tarea de carga pasa bloqueada en cada ciclo. Tiene
+            que ser mayor que la rafaga, para que la tarea inactiva del nucleo
+            llegue a ejecutarse. El ciclo, rafaga mas espera, no debe ser
+            divisor del periodo del sensor ni multiplo del periodo de los
+            temporizadores: con 20 + 27 = 47 ms no lo es de ninguno.
 
 endmenu

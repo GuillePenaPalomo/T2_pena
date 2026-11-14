@@ -1,124 +1,64 @@
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <unistd.h>
+/* main.c - SEyTR, Taller 2: tareas, prioridades y temporización.
+ *
+ * Este fichero solo inicia y arranca. Cada módulo está en su componente, en
+ * components/, y no sabe ni en qué pin está su periférico ni con qué prioridad
+ * corre su tarea: se lo dice app_main, que lo toma de dos ficheros.
+ *   pines.h   los pines del proyecto
+ *   tareas.h  la prioridad, el núcleo y la pila de cada tarea
+ *
+ * Qué hardware necesita
+ * ---------------------
+ * La placa del curso, conectada por su conector USB-a-UART, que es por donde
+ * va la consola. El montaje del Taller 1: LED, pulsador y sensor BME280.
+ */
 
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 
-#include "driver/gpio.h"
-#include "esp_attr.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "esp_system.h"
-#include "esp_timer.h"
 #include "sdkconfig.h"
 
-#include "consola.h"
-#include "led.h"
-#include "pulsador.h"
-#include "bme280.h"
-#include "bus_i2c.h"
+#include "carga.h"
+#include "comandos.h"
 
-#include "pines.h"
+#include "tareas.h"
 
-static const char *TAG = "Taller 2";
+static const char *TAG = "taller2";
 
-/* Valores de la configuración del proyecto, en microsegundos salvo que se
- * diga otra cosa. */
-#define TRABAJO_REGISTRO_MS CONFIG_SEYTR_TRABAJO_REGISTRO_MS
+/* La espera tiene que ser mayor que la ráfaga: si no, con las dos tareas de
+ * carga desfasadas podría haber siempre una lista, y la tarea inactiva del
+ * núcleo 0 no llegaría a ejecutarse tampoco en turnos. */
+_Static_assert(CONFIG_SEYTR_CARGA_ESPERA_MS > CONFIG_SEYTR_CARGA_RAFAGA_MS,
+               "la espera de la carga tiene que ser mayor que su rafaga");
 
-/* Prioridades de la variante en tareas. La del pulsador es la más alta
- * porque es la actividad con el plazo más corto; el criterio se estudia en
- * U3-S5. La tarea inactiva tiene prioridad 0 y app_main, 1. */
-#define PRIORIDAD_CARGA     6
-#define PRIORIDAD_INFORME   6
-#define NUCLEO0             0
-#define NUCLEO1             1
-
-
-/* ------------------------------------------------------------------------
- * Las medidas.
- * ------------------------------------------------------------------------ */
-
-/* Escribe una duración en microsegundos como milisegundos con una cifra
- * decimal y coma decimal, por ejemplo 12,3. */
-static void escribir_ms(char *destino, size_t tam, int64_t us)
+static void iniciar_carga(void)
 {
-    // destino: donde lo quieres imprimir
-    // tam: el tamaño de lo que quieres imprimir
-    if (us < 0) us = 0;
-    snprintf(destino, tam, "%" PRId64 ",%" PRId64, us / 1000, (us % 1000) / 100);
-    // PRId64 significa imprime un entero sin signo de 64 bits.
-}
-
-static uint32_t s_informes = 0;
-
-static void escribir_informe(void *argumento)
-{
-    (void)argumento;
-    s_informes++;
-    printf("registro: informe %" PRIu32 " escrito\n", s_informes);
-}
-
-/* ------------------------------------------------------------------------
- * Tareas.
- * ------------------------------------------------------------------------ */
-
-static void trabajar_ms(uint32_t ms) {
-    const int64_t fin = esp_timer_get_time() + (int64_t)ms * 1000;
-    uint64_t cuenta = 0;
-    
-    while (esp_timer_get_time() < fin) {
-        cuenta++;
-    }
-
-}
-
-static void carga_1(void *argumento)
-{
-    (void)argumento;
-    for (;;) {
-        trabajar_ms(TRABAJO_REGISTRO_MS);
-        vTaskDelay(pdMS_TO_TICKS(27));
-    }
-}
-
-static void carga_2(void *argumento) 
-{
-    (void)argumento;
-    (void)argumento;
-    for (;;) {
-        trabajar_ms(TRABAJO_REGISTRO_MS);
-        vTaskDelay(pdMS_TO_TICKS(27));
-    }
-}
-
-
-static void crear_tareas(void)
-{
-    bool ok = true;
-
-    ok = ok && xTaskCreatePinnedToCore(carga_1, "carga", 3072, NULL,
-                                       PRIORIDAD_CARGA, NULL, NUCLEO0) == pdPASS;
-    ok = ok && xTaskCreatePinnedToCore(carga_2, "carga", 3072, NULL,
-                                       PRIORIDAD_CARGA, NULL, NUCLEO0) == pdPASS;
-    ok = ok && xTaskCreatePinnedToCore(escribir_informe, "informe", 3072, NULL,
-                                       PRIORIDAD_INFORME, NULL, NUCLEO1) == pdPASS;
-    
-    if (!ok) {
-        ESP_LOGE(TAG, "no hay memoria para las tareas");
-    }
+    const carga_config_t config = {
+        .rafaga_ms = CONFIG_SEYTR_CARGA_RAFAGA_MS,
+        .espera_ms = CONFIG_SEYTR_CARGA_ESPERA_MS,
+        .prioridad = PRIORIDAD_CARGA,
+        .prioridad_alta = PRIORIDAD_CARGA_ALTA,
+        .nucleo = NUCLEO_PRUEBA,
+        .pila = PILA_CARGA,
+        .prioridad_informe = PRIORIDAD_INFORME,
+        .nucleo_informe = NUCLEO_OBSERVACION,
+        .pila_informe = PILA_INFORME,
+    };
+    ESP_ERROR_CHECK(carga_iniciar(&config));
 }
 
 void app_main(void)
 {
     ESP_LOGI(TAG, "SEyTR - Taller 2. Tick a %d Hz", configTICK_RATE_HZ);
-    if (configTICK_RATE_HZ != 1000) {
+    if (configTICK_RATE_HZ != 1000)
+    {
         ESP_LOGW(TAG, "el tick no esta a 1000 Hz, que es el valor del curso");
     }
 
-    crear_tareas();
+    iniciar_carga();
 
+    /* La consola, al final: sus comandos llaman a los demás componentes. */
+    ESP_ERROR_CHECK(comandos_iniciar());
+
+    /* app_main termina aquí; las tareas siguen. */
 }
