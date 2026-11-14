@@ -39,6 +39,30 @@ static const char *TAG = "Taller 2";
 
 
 /* ------------------------------------------------------------------------
+ * Las medidas.
+ * ------------------------------------------------------------------------ */
+
+/* Escribe una duración en microsegundos como milisegundos con una cifra
+ * decimal y coma decimal, por ejemplo 12,3. */
+static void escribir_ms(char *destino, size_t tam, int64_t us)
+{
+    // destino: donde lo quieres imprimir
+    // tam: el tamaño de lo que quieres imprimir
+    if (us < 0) us = 0;
+    snprintf(destino, tam, "%" PRId64 ",%" PRId64, us / 1000, (us % 1000) / 100);
+    // PRId64 significa imprime un entero sin signo de 64 bits.
+}
+
+static uint32_t s_informes = 0;
+
+static void escribir_informe(void *argumento)
+{
+    (void)argumento;
+    s_informes++;
+    printf("registro: informe %" PRIu32 " escrito\n", s_informes);
+}
+
+/* ------------------------------------------------------------------------
  * Tareas.
  * ------------------------------------------------------------------------ */
 
@@ -80,6 +104,8 @@ static void crear_tareas(void)
                                        PRIORIDAD_CARGA, NULL, NUCLEO0) == pdPASS;
     ok = ok && xTaskCreatePinnedToCore(carga_2, "carga", 3072, NULL,
                                        PRIORIDAD_CARGA, NULL, NUCLEO0) == pdPASS;
+    ok = ok && xTaskCreatePinnedToCore(escribir_informe, "informe", 3072, NULL,
+                                       PRIORIDAD_INFORME, NULL, NUCLEO1) == pdPASS;
     
     if (!ok) {
         ESP_LOGE(TAG, "no hay memoria para las tareas");
