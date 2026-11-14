@@ -34,3 +34,14 @@
  * prioridad importa poco, y va en el núcleo de observación. */
 #define PRIORIDAD_INFORME 5
 #define PILA_INFORME 3072
+
+/* Tarea periódica del sensor (P2). En el núcleo de la carga, para que la carga
+ * pueda retrasarla. Su plazo es su periodo, 1 s, pero lo que se pide es que
+ * cada activación llegue a su instante: si tuviera menos prioridad que la
+ * carga, cada activación que cayera en una ráfaga esperaría hasta 20 ms, el
+ * fin de la ráfaga. Con más prioridad que la carga, la expulsa en cuanto
+ * despierta. Por debajo de la consola, que tiene que responder siempre; la
+ * lectura dura unos 10 ms y se repite una vez por segundo, así que no le
+ * quita a la consola un tiempo apreciable. */
+#define PRIORIDAD_SENSOR 4
+#define PILA_SENSOR 3072
