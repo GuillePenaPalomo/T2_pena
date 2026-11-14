@@ -45,3 +45,17 @@
  * quita a la consola un tiempo apreciable. */
 #define PRIORIDAD_SENSOR 4
 #define PILA_SENSOR 3072
+
+/* Tarea del pulsador (P3). Es la que tiene el plazo más corto: una pulsación
+ * se tiene que notar en unas decenas de milisegundos, y su trabajo es mínimo.
+ * La más alta de las propias del núcleo 0, para que ni la carga, ni en
+ * inanición, retrase el cambio de modo. */
+#define PRIORIDAD_PULSADOR 6
+#define PILA_PULSADOR 3072
+
+/* Tarea del LED (P3), la única que maneja LEDC. Atiende las órdenes del
+ * pulsador y de la consola; por encima de la carga, para que el cambio de modo
+ * no espere a que acabe una ráfaga, y por debajo del pulsador, que es quien
+ * le manda la orden. */
+#define PRIORIDAD_LED 4
+#define PILA_LED 3072
