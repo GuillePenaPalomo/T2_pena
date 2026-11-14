@@ -59,3 +59,12 @@
  * le manda la orden. */
 #define PRIORIDAD_LED 4
 #define PILA_LED 3072
+
+/* Tarea de medida de los temporizadores (P4). Recibe por una cola el instante
+ * que toman las dos funciones de respuesta y calcula sus resúmenes. En el
+ * núcleo de observación, para que la carga no la retrase y la cola no se
+ * llene; con más prioridad que el resto de las propias, porque cada 10 ms le
+ * llegan dos instantes. Su propio retraso no entra en la medida: el instante
+ * lo toma la función de respuesta, no ella. */
+#define PRIORIDAD_MEDIDA 7
+#define PILA_MEDIDA 3072
