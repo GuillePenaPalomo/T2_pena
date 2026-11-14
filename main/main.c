@@ -22,6 +22,7 @@
 #include "bus_i2c.h"
 #include "carga.h"
 #include "comandos.h"
+#include "inspeccion.h"
 #include "led.h"
 #include "pulsador.h"
 #include "sensor.h"
@@ -168,6 +169,18 @@ static void iniciar_temporizadores(void)
     ESP_ERROR_CHECK(temporizadores_iniciar(&config));
 }
 
+/* Las tareas propias, para la tabla de pilas del comando tareas. */
+static const inspeccion_tarea_t s_tareas_propias[] = {
+    {"carga_a", PILA_CARGA},
+    {"carga_b", PILA_CARGA},
+    {"informe", PILA_INFORME},
+    {"sensor", PILA_SENSOR},
+    {"led", PILA_LED},
+    {"pulsador", PILA_PULSADOR},
+    {"medida", PILA_MEDIDA},
+    {"consola", PILA_CONSOLA},
+};
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "SEyTR - Taller 2. Tick a %d Hz", configTICK_RATE_HZ);
@@ -180,6 +193,8 @@ void app_main(void)
     iniciar_sensor();
     iniciar_led_y_pulsador();
     iniciar_temporizadores();
+    ESP_ERROR_CHECK(inspeccion_iniciar(s_tareas_propias,
+                                       sizeof s_tareas_propias / sizeof s_tareas_propias[0]));
 
     /* La consola, al final: sus comandos llaman a los demás componentes. */
     ESP_ERROR_CHECK(comandos_iniciar());

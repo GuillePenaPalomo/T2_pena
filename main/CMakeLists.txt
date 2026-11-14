@@ -4,4 +4,4 @@
 idf_component_register(SRCS "main.c"
                        INCLUDE_DIRS "."
                        PRIV_REQUIRES esp_driver_gpio bus_i2c bme280 carga comandos
-                                     led pulsador sensor temporizadores)
+                                     inspeccion led pulsador sensor temporizadores)

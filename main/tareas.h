@@ -68,3 +68,8 @@
  * lo toma la función de respuesta, no ella. */
 #define PRIORIDAD_MEDIDA 7
 #define PILA_MEDIDA 3072
+
+/* La tarea de la consola la crea su componente, del Taller 1, con prioridad 5,
+ * sin afinidad y 4096 bytes de pila. Aquí solo se anota, para la tabla de
+ * pilas del comando tareas. */
+#define PILA_CONSOLA 4096

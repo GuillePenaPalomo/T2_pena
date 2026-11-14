@@ -10,6 +10,7 @@
 
 #include "carga.h"
 #include "consola.h"
+#include "inspeccion.h"
 #include "led.h"
 #include "pulsador.h"
 #include "sensor.h"
@@ -238,6 +239,16 @@ static void comando_jitter(const char *argumentos)
     }
 }
 
+/* ---- Integración: la lista de tareas y el reparto -------------------------- */
+
+static void comando_tareas(const char *argumentos)
+{
+    (void)argumentos;
+    printf("Carga en %s (t = %lu ms)\n", carga_nombre_modo(carga_modo()),
+           (unsigned long)esp_log_timestamp());
+    inspeccion_escribir();
+}
+
 /* ---- La tabla -------------------------------------------------------------- */
 
 static const consola_comando_t s_comandos[] = {
@@ -253,6 +264,8 @@ static const consola_comando_t s_comandos[] = {
     {"periodo", "[ms]", "Periodo de la alarma y del temporizador software", comando_periodo},
     {"jitter", NULL, "Ultimos resumenes de los dos temporizadores, por modo de carga",
      comando_jitter},
+    {"tareas", NULL, "Lista de tareas, reparto del procesador, carga desde la anterior y pilas",
+     comando_tareas},
 };
 
 esp_err_t comandos_iniciar(void)

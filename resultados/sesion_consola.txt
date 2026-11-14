@@ -1,0 +1,167 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x2b (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x14f0
+load:0x403c8700,len:0xde4
+load:0x403cb700,len:0x2f58
+entry 0x403c8904
+I (24) boot: ESP-IDF v6.1 2nd stage bootloader
+I (25) boot: compile time Nov 14 2026 20:04:49
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (28) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 2MB
+I (43) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (50) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (69) boot:  2 factory          factory app      00 00 00010000 00100000
+I (76) boot: End of partition table
+I (79) esp_image: segment 0: paddr=00010020 vaddr=3c030020 size=0f078h ( 61560) map
+I (97) esp_image: segment 1: paddr=0001f0a0 vaddr=3fc91e00 size=00f78h (  3960) load
+I (99) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=21618h (136728) map
+I (126) esp_image: segment 3: paddr=00041640 vaddr=3fc92d78 size=02364h (  9060) load
+I (128) esp_image: segment 4: paddr=000439ac vaddr=40374000 size=0dd8ch ( 56716) load
+I (143) esp_image: segment 5: paddr=00051740 vaddr=50000000 size=00024h (    36) load
+I (149) boot: Loaded app from partition at offset 0x10000
+I (149) boot: Disabling RNG early entropy source...
+I (161) cpu_start: Multicore app
+I (169) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+I (170) cpu_start: Pro cpu start user code
+I (170) cpu_start: cpu freq: 160000000 Hz
+I (171) app_init: Application information:
+I (175) app_init: Project name:     T2_pena
+I (179) app_init: App version:      db2a9f8-dirty
+I (184) app_init: Compile time:     Nov 14 2026 20:10:55
+I (189) app_init: ELF file SHA256:  9987f0ab7...
+I (193) app_init: ESP-IDF:          v6.1
+I (197) efuse_init: Min chip rev:     v0.0
+I (200) efuse_init: Max chip rev:     v0.99 
+I (204) efuse_init: Chip rev:         v0.2
+I (208) heap_init: Initializing. RAM available for dynamic allocation:
+I (215) heap_init: At 3FC96E10 len 00052900 (330 KiB): RAM
+I (220) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (225) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (230) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+I (236) spi_flash: detected chip: mxic
+I (239) spi_flash: flash io: dio
+W (242) spi_flash: Detected size(16384k) larger than the size in the binary image header(2048k). Using the size in the binary image header.
+I (255) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (260) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (268) main_task: Started on CPU0
+I (286) main_task: Calling app_main()
+I (286) taller2: SEyTR - Taller 2. Tick a 1000 Hz
+I (287) carga: dos tareas de carga en el nucleo 0, prioridad 2: 20 ms de calculo y 27 ms de espera. Empieza parada
+I (300) bme280: BME280 en 0x76, identificacion 0x60, calibracion leida
+I (301) sensor: tarea periodica de 1000 ms, prioridad 4, nucleo 0: un resumen cada 50 intervalos
+I (308) led: 5000 Hz con 13 bits piden un reloj de al menos 40960000 Hz
+I (315) led: LEDC en el GPIO 4: 5000 Hz, 13 bits, 100 % = 8192
+I (320) pulsador: pulsador en el GPIO 5, pulsado con nivel 0, pull-up interno
+I (327) pulsador: atendido por interrupcion: guarda 200 ms, confirmacion 20 ms
+I (334) temporizadores: alarma de esp_timer y temporizador software de 10 ms; un resumen cada 50 intervalos
+I (343) comandos: consola en la UART0: escribe help para ver los comandos
+> I (362) main_task: Returned from app_main()
+temporizador software, carga parada: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,943, max 10,057, jitter 0,114 ms, rebases 0
+alarma esp_timer, carga parada: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,977, max 10,024, jitter 0,047 ms, rebases 0
+help
+Comandos:
+  help               Muestra esta lista de comandos
+  carga parada|turnos|inanicion|corregida Cambia el modo de la carga; sin argumento, lo muestra
+  informe on|off     Muestra u oculta el informe de la carga de cada segundo
+  sensor [prio <n>]  Ultima medida y ultimo resumen de cada modo; prio cambia la prioridad
+  led [siguiente|apagado|medio|encendido|transici Modo del LED o ciclo de trabajo en %; sin argumento, el estado
+  periodo [ms]       Periodo de la alarma y del temporizador software
+  jitter             Ultimos resumenes de los dos temporizadores, por modo de carga
+  tareas             Lista de tareas, reparto del procesador, carga desde la anterior y pilas
+> carga
+Carga: parada. Uso: carga <parada|turnos|inanicion|corregida>
+> carga turnos
+Carga: turnos (t = 6228 ms)
+> carga turnos (t = 6287 ms): carga_a prio 2 avanza 14526; carga_b prio 2 avanza 14956
+temporizador software, carga turnos: 50 intervalos; medio 9,679 ms (nominal 10,000), min 0,004, max 31,014, jitter 31,010 ms, rebases 0
+alarma esp_timer, carga turnos: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,988, max 10,014, jitter 0,026 ms, rebases 0
+carga turnos (t = 7287 ms): carga_a prio 2 avanza 197886; carga_b prio 2 avanza 217115
+carga turnos (t = 8287 ms): carga_a prio 2 avanza 194500; carga_b prio 2 avanza 212215
+informe off
+Informe de la carga: oculto
+> carga inanicion
+Carga: inanicion (t = 9854 ms)
+carga_a no se bloquea: el aviso del watchdog deberia salir en unos 5 s
+> alarma esp_timer, carga inanicion: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,976, max 10,026, jitter 0,050 ms, rebases 0
+E (14894) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+E (14894) task_wdt:  - IDLE0 (CPU 0)
+E (14894) task_wdt: Tasks currently running:
+E (14894) task_wdt: CPU 0: carga_a
+E (14894) task_wdt: CPU 1: IDLE1
+E (14894) task_wdt: Print CPU 0 (current core) backtrace
+
+
+Backtrace: 0x42015B56:0x3FC931E0 0x42015F68:0x3FC93200 0x40377521:0x3FC93230 0x403799B9:0x3FCEA460 0x40376B82:0x3FCEA480 0x42011F48:0x3FCEA4A0 0x42011F7D:0x3FCEA4C0 0x4201E652:0x3FCEA4E0
+
+carga corregida
+Carga: corregida (t = 16955 ms)
+> temporizador software, carga corregida: 50 intervalos; medio 0,004 ms (nominal 10,000), min 0,004, max 0,014, jitter 0,010 ms, rebases 0
+alarma esp_timer, carga corregida: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,989, max 10,009, jitter 0,020 ms, rebases 0
+carga parada
+Carga: parada (t = 19043 ms)
+> temporizador software, carga parada: 50 intervalos; medio 9,759 ms (nominal 10,000), min 0,009, max 10,086, jitter 10,077 ms, rebases 0
+alarma esp_timer, carga parada: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,980, max 10,020, jitter 0,040 ms, rebases 0
+sensor
+Ultima medida: T=23,83 C, P=958,16 hPa, HR=53,08 %
+Tarea sensor: periodo 1000 ms, prioridad 4. Resumen en curso: 0 de 50 intervalos, con la carga en parada
+  carga parada: sin resumen completo
+  carga turnos: sin resumen completo
+  carga inanicion: sin resumen completo
+  carga corregida: sin resumen completo
+> led
+LED: modo apagado, ciclo de trabajo 0 de 8192. Pulsaciones 0, flancos descartados 0
+> led siguiente
+> led: modo medio, ciclo de trabajo 2048 de 8192
+led medio
+> led: modo medio, ciclo de trabajo 2048 de 8192
+led 30
+> led: ciclo de trabajo 30 %, 2457 de 8192
+led 101
+Uso: led [siguiente|apagado|medio|encendido|transicion|0-100]
+> periodo
+Periodo de los temporizadores: 10 ms
+> periodo 20
+Periodo de la alarma y del temporizador software: 20 ms. La medida empieza de nuevo.
+> alarma esp_timer, carga parada: 50 intervalos; medio 19,999 ms (nominal 20,000), min 19,975, max 20,010, jitter 0,035 ms, rebases 0
+temporizador software, carga parada: 50 intervalos; medio 20,000 ms (nominal 20,000), min 19,928, max 20,072, jitter 0,144 ms, rebases 0
+jitter
+Periodo actual 20 ms, carga en parada
+alarma esp_timer (envios perdidos con la cola llena: 0):
+  carga parada: 50 intervalos; medio 20,000 ms (nominal 20,000), min 19,985, max 20,015, jitter 0,030 ms, rebases 0
+  carga turnos: 50 intervalos; medio 10,000 ms (nominal 10,000), min 9,981, max 10,021, jitter 0,040 ms, rebases 0
+  carga inanicion: 50 intervalos; medio 10,000 ms (nominal 10,000), min 9,999, max 10,001, jitter 0,002 ms, rebases 0
+  carga corregida: 50 intervalos; medio 10,000 ms (nominal 10,000), min 9,999, max 10,001, jitter 0,002 ms, rebases 0
+temporizador software (envios perdidos con la cola llena: 556):
+  carga parada: 50 intervalos; medio 19,999 ms (nominal 20,000), min 19,931, max 20,069, jitter 0,138 ms, rebases 0
+  carga turnos: 50 intervalos; medio 10,000 ms (nominal 10,000), min 0,004, max 31,014, jitter 31,010 ms, rebases 0
+  carga corregida: 50 intervalos; medio 10,339 ms (nominal 10,000), min 0,004, max 46,985, jitter 46,981 ms, rebases 0
+> periodo 10
+Periodo de la alarma y del temporizador software: 10 ms. La medida empieza de nuevo.
+> alarma esp_timer, carga parada: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,986, max 10,000, jitter 0,014 ms, rebases 0
+temporizador software, carga parada: 50 intervalos; medio 9,999 ms (nominal 10,000), min 9,958, max 10,042, jitter 0,084 ms, rebases 0
+comando_que_no_existe
+No conozco "comando_que_no_existe". Escribe help para ver los comandos.
+> 
+> aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Linea demasiado larga: caben 64 caracteres. Se descarta entera.
+> help
+Comandos:
+  help               Muestra esta lista de comandos
+  carga parada|turnos|inanicion|corregida Cambia el modo de la carga; sin argumento, lo muestra
+  informe on|off     Muestra u oculta el informe de la carga de cada segundo
+  sensor [prio <n>]  Ultima medida y ultimo resumen de cada modo; prio cambia la prioridad
+  led [siguiente|apagado|medio|encendido|transici Modo del LED o ciclo de trabajo en %; sin argumento, el estado
+  periodo [ms]       Periodo de la alarma y del temporizador software
+  jitter             Ultimos resumenes de los dos temporizadores, por modo de carga
+  tareas             Lista de tareas, reparto del procesador, carga desde la anterior y pilas
+> 
